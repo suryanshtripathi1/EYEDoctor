@@ -1,0 +1,31 @@
+<section>
+    <h1>Hello</h1>
+    <div id="imageContainer">hello this is container</div>
+</section>
+<script>
+    window.onload = async function() {
+        try {
+            const response = await fetch('/getimage');
+            if (!response.ok) {
+                throw new Error('Failed to fetch image');
+            }
+            const imageData = await response.blob(); // Assuming the image data is returned as a blob
+            // Convert blob to Base64
+            const reader = new FileReader();
+            reader.onload = function() {
+                const imageUrl = reader.result;
+
+                // Create img element and set src attribute
+                const imageContainer = document.getElementById('imageContainer');
+                const imgElement = document.createElement('img');
+                imgElement.src = imageUrl;
+
+                // Append img element to container
+                imageContainer.appendChild(imgElement);
+            };
+            reader.readAsDataURL(imageData);
+        } catch (error) {
+            console.error('Error fetching image:', error);
+        }
+    };
+</script>

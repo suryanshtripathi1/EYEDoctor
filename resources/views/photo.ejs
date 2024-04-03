@@ -1,0 +1,136 @@
+<div class="my-7 text-center">
+    <h1 class="text-green-400">Welcome to Eye Diagnosis page!!</h1>
+    <h2 class="text-red-400">Please capture/upload your eye image to get the results</h2>
+    <h2 class="text-red-400">***After capturing/uploading the image please review it from below then submit it for evaluation***</h2>
+</div>
+<video id="videoElement" class="rounded-md shadow-lg m-auto border border-4 border-black" autoplay></video>
+<div class="mt-4 flex flex-col items-center">
+    <button id="captureButton" class="px-4 py-2 bg-blue-500 text-white rounded-md shadow-md hover:bg-blue-600 focus:outline-none focus:ring focus:ring-blue-400">Capture</button>
+    <input type="file" id="uploadInput" class="hidden">
+    <button id="uploadButton" class="mt-4 px-4 py-2 bg-green-500 text-white rounded-md shadow-md hover:bg-green-600 focus:outline-none focus:ring focus:ring-green-400">Upload from Local Computer</button>
+</div>
+<div id="imageContainer" class="mt-4 hidden flex flex-col items-center justify-center">
+    <img id="capturedImage" class="rounded-md shadow-lg">
+    <button id="deleteCapturedButton" class="block mt-2 px-4 py-2 bg-red-500 text-white rounded-md shadow-md hover:bg-red-600 focus:outline-none focus:ring focus:ring-red-400">Delete Captured Image</button>
+</div>
+<div id="uploadedImageContainer" class="mt-4 hidden flex flex-col items-center justify-center">
+    <img id="uploadedImage" class="rounded-md shadow-lg">
+    <button id="deleteUploadButton" class="mt-4 px-4 py-2 bg-red-500 text-white rounded-md shadow-md hover:bg-red-600 focus:outline-none focus:ring focus:ring-red-400 hidden">Delete Uploaded Image</button>
+</div>
+<div class="mt-4" id="submitContainer" style="display: none;">
+    <button id="submitButton" class="px-4 py-2 bg-purple-500 text-white rounded-md shadow-md hover:bg-purple-600 focus:outline-none focus:ring focus:ring-purple-400 w-full">Submit for evaluation</button>
+</div>
+
+<script>
+    var video = document.getElementById('videoElement');
+    var captureButton = document.getElementById('captureButton');
+    var uploadInput = document.getElementById('uploadInput');
+    var uploadButton = document.getElementById('uploadButton');
+    var deleteUploadButton = document.getElementById('deleteUploadButton');
+    var capturedImage = document.getElementById('capturedImage');
+    var deleteCapturedButton = document.getElementById('deleteCapturedButton');
+    var uploadedImage = document.getElementById('uploadedImage');
+    var uploadedImageContainer = document.getElementById('uploadedImageContainer');
+    var submitButton = document.getElementById('submitButton');
+    var submitContainer = document.getElementById('submitContainer');
+
+    document.getElementById('captureButton').addEventListener('click', function() {
+        submitContainer.style.display = 'block'; // Show the submit button
+    });
+
+    document.getElementById('uploadButton').addEventListener('click', function() {
+        submitContainer.style.display = 'block'; // Show the submit button
+    });
+
+    document.getElementById('deleteUploadButton').addEventListener('click', function() {
+        hideSubmitButton(); // Hide the submit button
+    });
+
+    document.getElementById('deleteCapturedButton').addEventListener('click', function() {
+        hideSubmitButton(); // Hide the submit button
+    });
+
+    function hideSubmitButton() {
+        submitContainer.style.display = 'none'; // Hide the submit button
+    }
+
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } })
+        .then(function(stream) {
+            video.srcObject = stream;
+        })
+        .catch(function(err) {
+            console.error('Error accessing the camera: ' + err);
+        });
+
+    captureButton.addEventListener('click', function() {
+        var canvas = document.createElement('canvas');
+        var context = canvas.getContext('2d');
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+        capturedImage.src = canvas.toDataURL('image/png');
+        imageContainer.classList.remove('hidden');
+        deleteCapturedButton.classList.remove('hidden');
+    });
+
+    uploadButton.addEventListener('click', function() {
+        uploadInput.click();
+    });
+
+    uploadInput.addEventListener('change', function() {
+        const file = this.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                uploadedImage.src = event.target.result;
+                uploadedImageContainer.classList.remove('hidden');
+                deleteUploadButton.classList.remove('hidden');
+            };
+            reader.readAsDataURL(file);
+        }
+    });
+
+    submitButton.addEventListener('click', function() {
+        if (capturedImage.src !== '') {
+            saveImageToServer(capturedImage.src);
+        } else if (uploadedImage.src !== '') {
+            saveImageToServer(uploadedImage.src);
+        } else {
+            console.error('No image to save');
+        }
+    });
+
+    function saveImageToServer(imageData) {
+        fetch('/saveimage', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ imageData: imageData })
+        })
+        .then(response => {
+            if (response.ok) {
+                console.log('Image saved successfully!');
+                window.location.href = '/';
+            } else {
+                console.error('Failed to save image');
+            }
+        })
+        .catch(error => {
+            console.error('Error saving image:', error);
+        });
+    }
+
+    deleteUploadButton.addEventListener('click', function() {
+        uploadedImage.src = '';
+        uploadedImageContainer.classList.add('hidden');
+        deleteUploadButton.classList.add('hidden');
+        uploadInput.value = '';
+    });
+
+    deleteCapturedButton.addEventListener('click', function() {
+        capturedImage.src = '';
+        imageContainer.classList.add('hidden');
+        deleteCapturedButton.classList.add('hidden');
+    });
+</script>
